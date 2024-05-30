@@ -1,0 +1,49 @@
+
+chm_train <- chm.2
+
+plot(chm.2)
+plot(chm_train)
+
+
+# smooth cropped CHMs
+w <- matrix(1, 3, 3)
+chm_train <- terra::focal(chm_train, w, fun = mean, na.rm = T)
+
+
+# create a binary raster where values greater than 10m are 2 (vegetation) and others are 1
+chm_binary_10 <- terra::ifel(chm_train >= 10, 2, 1) 
+terra::plot(chm_binary_10)
+
+# create a second binary raster where values greater than 5m are 1 (vegetation) and others are 0
+chm_binary_5 <- terra::ifel(chm_train >= 5, 1, 0)
+terra::plot(chm_binary_5)
+
+# multiplication of the two rasters
+chm_gaps <- chm_binary_5 * chm_binary_10 # to get 3 classes; 2, 1, and 0
+terra::plot(chm_gaps)
+
+# combine resulting classes 2 and 1 (vegetation) to unify just as 1
+chm_gaps <- terra::ifel(chm_gaps == 2 | chm_gaps == 1, 1, 0)
+terra::plot(chm_gaps)
+
+# apply ForestGapR
+gaps <- ForestGapR::getForestGaps(chm_gaps, 
+                                  threshold = 0, # cos 0 is our gaps now, and in the calculation it sets '0 or below' 
+                                  size = c(10,1000))
+
+# convert the resulting gap raster to polygons
+canopy_gaps <- terra::as.polygons(
+  gaps,
+  round = TRUE,
+  aggregate = TRUE,
+  values = FALSE
+)
+
+# convert to an sf object
+canopy_gaps <- sf::st_as_sf(canopy_gaps)
+
+terra::plot(chm_train, col = viridis::viridis(50))
+terra::plot(canopy_gaps$geometry,
+            border = 'red',
+            lwd = 0.5,
+            add = T)
