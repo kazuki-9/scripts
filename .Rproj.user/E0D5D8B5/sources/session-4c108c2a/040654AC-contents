@@ -248,9 +248,13 @@ plot(con_1_shp)
 
 
 # github setup ------------------------------------------------------------
+library(pacman)
 p_load(usethis)
 edit_git_config()
 use_git()
+
+p_load(gitcreds)
+gitcreds_set()
 
 # to crop BL / coniferous stands
 
